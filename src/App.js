@@ -25,8 +25,8 @@ class App extends Component {
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
        // get Enqueries from smart contract
-    //   this.setState({ web3, accounts, contract: instance },this.runExample);
-  const enqCnt = await instance.methods.getEnqueryCount().call();  
+    //   this.setState({ web3, accounts, contract: instance },this.runExample);    
+    const enqCnt = await instance.methods.getEnqueryCount().call();  
   
   let enqList=[];
   let bid,enquery;
@@ -91,7 +91,7 @@ const mapDispatchToProps = (dispatch) => {
     setEnqs: (enqs) => dispatch({type: 'setEnqs', payload: enqs}),
     setWeb3: (web3) => dispatch({type: 'setWeb3', payload: web3}),
     setAccount: (account) => dispatch({type: 'setAccount', payload: account}),
-    setContract:(inst) => dispatch({type: 'setContract', payload: inst}),
+    setContract:(contract) => dispatch({type: 'setContract', payload: contract}),
   }
 }
 

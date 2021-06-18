@@ -1,8 +1,8 @@
 const initstate={
     enqueries:[],
     account:"",
-    web3: null,
-    contract: null
+    contract:null,
+    web3: null
 }
 const rootReducer=(state=initstate,action)=>{    
     switch (action.type) {
@@ -14,7 +14,10 @@ const rootReducer=(state=initstate,action)=>{
             return { ...state,web3:action.payload}        
         case 'setAccount':
             return {...state,account:action.payload}
+        case 'setContract':
+            return {...state,contract:action.payload}
         case 'updateEnq':
+            console.log(action.payload);
             return {...state,enqueries:action.payload}
         default:
             return state;    

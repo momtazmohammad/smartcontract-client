@@ -42,7 +42,7 @@ function FormDialog(props) {
                  setErrors({...errors,[fld]:""});
             }
         }
-        if(props.enquery.bidder && props.enquery.amount<bid.amount) {
+        if(props.enquery.bidder!=="0x0000000000000000000000000000000000000000" && props.enquery.amount<bid.amount) {
           setOpenSnack({open:true,severity:"error",msg:"Your offer amount is greater than best offer price"});
           vld=false;
         }

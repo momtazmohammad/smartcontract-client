@@ -1,4 +1,4 @@
-import React ,{useState } from 'react'
+import React ,{useState,useEffect,useRef } from 'react'
 import { makeStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -52,7 +52,7 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const statusEnum={0:"Still Open",1:"Ended",2:"Received",3:"settlement",null:""}
+const statusEnum={0:"Still Open",1:"Ended",2:"Received",3:"Settlement",4:"Cancle",null:""}
 
 function EnqueryList(props) {
   
@@ -84,49 +84,72 @@ function EnqueryList(props) {
     setfilterState((filterState)=>({...filterState,[event.target.name]: event.target.checked }));
     
   }
-  // useInterval(()=>{
-  //   props.updateEnq(props.enqueries.map(async (item)=>{
-  //     if(item.status===0 && item.buyerAdd===props.account && (item.enqEndTime*1000+10000)<Date.now()) {
-  //       const res = await props.contract.methods.endEnquery(item.enqid).call();  
-  //       if(res) {      
-  //       item={...item,status:1};
-  //       }
-  //     } 
-  //     return item;
-  //   }));
-  //   // for(let i=0;i<enqueries.length;i++) {
-  //   // if(enqueries[i].buyerAdd===props.account && enqueries[i].enqEndTime*1000<Date.now()) {      
-  //   //   setEnqueries([...enqueries,{...enqueries[i],status:1}]);      
-  //   //   //call smart contract
-  //   // }
-  //   // }
-  //     },60000);
+  useInterval( async ()=>{
+    const updEnqs=[];
+    let updflg=false;
+    try {
+    for(const item of props.enqueries) {
+      console.log("i:",item,+item.status===0, item.buyerAdd===props.account, (item.enqEndTime*1000+10000),Date.now());
+      if(+item.status===0 && item.buyerAdd===props.account && (item.enqEndTime*1000+10000)<Date.now()) {
+        const res = await props.contract.methods.endEnquery(item.enqid).call();  
+        console.log("res:",res);
+        if(res) {      
+          if(item.supName==="") {
+            updEnqs.push({...item,status:4});
+            updflg=true;
+          } else {
+            updEnqs.push({...item,status:1});
+            updflg=true;
+          }          
+        } else {
+          updEnqs.push(item)
+        }
+      } else {
+        updEnqs.push(item)
+      }
+    }    
+    if(updflg){
+      console.log("update");
+    props.updateEnq(updEnqs);
+    }
+    }
+    catch (err){
+      console.log("err:",err);
+    }    
+    // for(let i=0;i<enqueries.length;i++) {
+    // if(enqueries[i].buyerAdd===props.account && enqueries[i].enqEndTime*1000<Date.now()) {      
+    //   setEnqueries([...enqueries,{...enqueries[i],status:1}]);      
+    //   //call smart contract
+    // }
+    // }
+      },60000);
 
-      // function useInterval(callback, delay) {
-      //   const savedCallback = useRef();
+      function useInterval(callback, delay) {
+        const savedCallback = useRef();
       
-      //   // Remember the latest function.
-      //   useEffect(() => {
-      //     savedCallback.current = callback;
-      //   }, [callback]);
+        // Remember the latest function.
+        useEffect(() => {
+          savedCallback.current = callback;
+        }, [callback]);
       
-      //   // Set up the interval.
-      //   useEffect(() => {
-      //     function tick() {
-      //       savedCallback.current();
-      //     }
-      //     if (delay !== null) {
-      //       let id = setInterval(tick, delay);
-      //       return () => clearInterval(id);
-      //     }
-      //   }, [delay]);
-      // }
+        // Set up the interval.
+        useEffect(() => {
+          function tick() {
+            savedCallback.current();
+          }
+          if (delay !== null) {
+            let id = setInterval(tick, delay);
+            return () => clearInterval(id);
+          }
+        }, [delay]);
+      }
 
   const onNewEnquery=()=>{
     setOpenNewEnquery(true);
   }
   const onPlaceBid=(enquery)=>{
-    if(enquery.status===0 && enquery.bidder!==props.account) {
+    console.log(enquery);
+    if(+enquery.status===0 && enquery.bidder!==props.account && enquery.buyerAdd!==props.account) {
     setEnquery(enquery);
     setOpenPlaceBid(true);
     } else {      
@@ -140,12 +163,12 @@ function EnqueryList(props) {
       }
     }  
   
-  const onRecieved=async (enquery)=>{
-    if(enquery.bidder===props.account && enquery.status===1) {
-      const res = await props.contract.methods.receivedItem(enquery.enqid).call();  
+  const onRecieved=async (enq)=>{
+    if(enq.bidder===props.account && enq.status===1) {
+      const res = await props.contract.methods.receivedItem(enq.enqid).call();  
     if(res) { 
       props.updateEnq(props.enqueries.map((item)=>{
-        if(item.enqid===enquery.enqid) {
+        if(item.enqid===enq.enqid) {
           item={...item,status:2};          
         } 
         return item;
@@ -155,12 +178,12 @@ function EnqueryList(props) {
     }
   }
 
-  const onSettlement=async (enquery)=>{
-    if(enquery.bidder===props.account && enquery.status===2) {
-      const res = await props.contract.methods.settlement(enquery.enqid).call();  
+  const onSettlement=async (enq)=>{
+    if(enq.bidder===props.account && enq.status===2) {
+      const res = await props.contract.methods.settlement(enq.enqid).call();  
     if(res) {
       props.updateEnq(props.enqueries.map((item)=>{
-        if(item.enqid===enquery.enqid) {
+        if(item.enqid===enq.enqid) {
           item={...item,status:3};          
         } 
         return item;
@@ -171,20 +194,21 @@ function EnqueryList(props) {
     }
   }
 
-  const handleSave=async (e)=>{
-    const result=await props.contract.methods.createEnquery(e.enqno,e.duration*60,e.partNo,e.partName,e.uom,e.qty,e.buyerName,e.locationAddress,e.buyerDeposit*10**18,e.sellerRcvDeposit*10**18,e.sellerPaidDeposit*10**18).send({ from: props.account,value:enquery.buyerDeposit*10**18});             
-    if(result>0) {
+  const handleSave=async (e)=>{    
+     const result=await props.contract.methods.createEnquery(e.enqno,+e.duration*60,e.partNo,e.partName,e.uom,+e.qty,e.buyerName,e.locationAddress,String(e.buyerDeposit*10**18),String(e.sellerRcvDeposit*10**18),String(e.sellerPaidDeposit*10**18)).send({ from: props.account,value:String(e.buyerDeposit*10**18)});     
+    if(result) {
     props.addEnq({enqid:result-1,enqno:e.enqno,enqEndTime:e.duration*60+Date.now()/1000,partNo:e.partNo,partName:e.partName,uom:e.uom,qty:e.qty,buyerName:e.buyerName,locationAddress:e.locationAddress,buyerDeposit:e.buyerDeposit,sellerRcvDeposit:e.sellerRcvDeposit,sellerPaidDeposit:e.sellerPaidDeposit,status:0,buyerAdd:props.account});
     setOpenNewEnquery(false);
     }
   }
   
   const handleSaveBid=async (bid)=>{
-    const res=await props.contract.methods.placeBid(bid.enqid,bid.enqno,bid.amount,bid.supName).send({from:props.account,value:bid.sellerRcvDeposit*10**18+bid.sellerPaidDeposit*10**18});
+    console.log(bid,enquery);
+    const res=await props.contract.methods.placeBid(enquery.enqid,enquery.enqno,bid.amount,bid.supName).send({from:props.account,value:enquery.sellerRcvDeposit*10**18+enquery.sellerPaidDeposit*10**18});
     if(res) {
     props.updateEnq(props.enqueries.map((item)=>{
       if(item.enqid===enquery.enqid) {
-        item={...item,amount:bid.amount,supName:bid.supName};
+        item={...item,amount:bid.amount,supName:bid.supName,bidder:props.account};
       } 
       return item;
     }));
@@ -209,6 +233,8 @@ function EnqueryList(props) {
                   return "R";    
                   case 3:
                       return "S";                
+                      case 4:
+                        return "C";                  
         default: return "";  
     }
     }
@@ -311,7 +337,8 @@ const mapStateToProps = (state)=>{
   return {
   enqueries:state.enqueries,
   contract:state.contract,
-  account:state.account
+  account:state.account,
+  enquery:state.enquery
   }
 }
 const mapDispatchToProps = (dispatch) => {
