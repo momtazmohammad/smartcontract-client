@@ -27,6 +27,7 @@ const getWeb3 = () =>
       else {
         const provider = new Web3.providers.HttpProvider(
           "http://127.0.0.1:7545"
+          //"https://ropsten.infura.io/v3/a143b861a8744567946ec8cb0a87c9df"
         );
         const web3 = new Web3(provider);
         console.log("No web3 instance injected, using Local web3.");
