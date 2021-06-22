@@ -125,16 +125,17 @@ function FormDialog(props) {
           status: 0,
           buyerAdd: props.account,
         });
+        setLoading(false);
         props.close();
       } catch (err) {
+        setLoading(false);
         console.log(err);
         setOpenSnack({
           open: true,
           severity: "error",
           msg: "Error happned please check the requirement",
         });
-      }
-      setLoading(false);
+      }     
     }
   };
   const setEnqueryState = ({ target }) => {

@@ -14,7 +14,6 @@ import { connect } from "react-redux";
 function Alert(props) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
-
 const useStyles = makeStyles((theme) => ({
   root: {
     "& > *": {
@@ -49,6 +48,7 @@ function FormDialog(props) {
   });
   const [loading, setLoading] = React.useState(false);
   const classes = useStyles();
+  
   const onSubmit = async () => {
     let vld = true;
     for (const fld in bid) {
@@ -99,8 +99,11 @@ function FormDialog(props) {
             return item;
           })
         );
+        setLoading(false);
         props.close();
       } catch (err) {
+        setLoading(false);
+        console.log(err);
         setOpenSnack({
           open: true,
           severity: "error",

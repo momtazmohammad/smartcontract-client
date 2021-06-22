@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import LinearProgress from '@material-ui/core/LinearProgress';
 import { makeStyles } from "@material-ui/core/styles";
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -63,6 +68,7 @@ const statusEnum = {
 };
 
 function EnqueryList(props) {
+  const [sendtxn, setSendtxn] = React.useState(false);
   const [openNewEnquery, setOpenNewEnquery] = useState(false);
   const [openPlaceBid, setOpenPlaceBid] = useState(false);
   const [enquery, setEnquery] = useState({});
@@ -115,29 +121,29 @@ function EnqueryList(props) {
     let updflg = false;
     try {
       //const res= await props.contract.methods.getBlocktime().call();
-      for (const item of props.enqueries) {
-        if (
-          +item.status === 0 &&
-          item.buyerAdd === props.account &&
-          item.enqEndTime * 1000 + 60000 < Date.now()
-        ) {
-          await props.contract.methods
-            .endEnquery(item.enqid)
-            .send({ from: props.account });
-          if (item.supName === "") {
-            updEnqs.push({ ...item, status: 4 });
-            updflg = true;
-          } else {
-            updEnqs.push({ ...item, status: 1 });
-            updflg = true;
-          }
-        } else {
-          updEnqs.push(item);
-        }
-      }
-      if (updflg) {
-        props.updateEnq(updEnqs);
-      }
+      // for (const item of props.enqueries) {
+      //   if (
+      //     +item.status === 0 &&
+      //     item.buyerAdd === props.account &&
+      //     item.enqEndTime * 1000 + 60000 < Date.now()
+      //   ) {
+      //     await props.contract.methods
+      //       .endEnquery(item.enqid)
+      //       .send({ from: props.account });
+      //     if (item.supName === "") {
+      //       updEnqs.push({ ...item, status: 4 });
+      //       updflg = true;
+      //     } else {
+      //       updEnqs.push({ ...item, status: 1 });
+      //       updflg = true;
+      //     }
+      //   } else {
+      //     updEnqs.push(item);
+      //   }
+      // }
+      // if (updflg) {
+      //   props.updateEnq(updEnqs);
+      // }
     } catch (err) {
       if (updflg) {
         for (const item of props.enqueries) {
@@ -207,6 +213,7 @@ function EnqueryList(props) {
   };
 
   const onEnd = async (enq) => {
+    setSendtxn(true);
     try {
       if (
         enq.buyerAdd === props.account &&
@@ -238,9 +245,11 @@ function EnqueryList(props) {
         msg: "Error happned please check the requirement",
       });
     }
+    setSendtxn(false);
   };
 
   const onCancle = async (enq) => {
+    setSendtxn(true);
     try {
       if (enq.buyerAdd === props.account && +enq.status === 0 && !enq.amount) {
         await props.contract.methods
@@ -268,9 +277,10 @@ function EnqueryList(props) {
         msg: "Error happned please check the requirement",
       });
     }
+    setSendtxn(false);
   };
-
   const onRecieved = async (enq) => {
+    setSendtxn(true);
     try {
       if (enq.buyerAdd === props.account && +enq.status === 1) {
         await props.contract.methods
@@ -298,9 +308,11 @@ function EnqueryList(props) {
         msg: "Error happned please check the requirement",
       });
     }
+    setSendtxn(false);
   };
 
   const onSettlement = async (enq) => {
+    setSendtxn(true);
     try {
       if (enq.bidder === props.account && +enq.status === 2) {
         await props.contract.methods
@@ -328,6 +340,7 @@ function EnqueryList(props) {
         msg: "Error happned please check the requirement",
       });
     }
+    setSendtxn(false);
   };
 
   const handleClose = () => {
@@ -359,6 +372,17 @@ function EnqueryList(props) {
 
   return (
     <div>
+        <Dialog
+        open={sendtxn}
+      >
+        <DialogTitle >{"Transaction is in progress ..."}</DialogTitle>
+        <DialogContent>          
+          <LinearProgress />
+        </DialogContent>
+        <DialogActions>        
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={openSnack.open}
         autoHideDuration={4000}
@@ -474,7 +498,7 @@ function EnqueryList(props) {
                   <TableCell>{row.amount}</TableCell>
                   <TableCell>{row.sellerRcvDeposit}</TableCell>
                   <TableCell>{row.sellerPaidDeposit}</TableCell>
-                  <TableCell>
+                  <TableCell>                  
                     <Chip
                       size="small"
                       variant="outlined"
