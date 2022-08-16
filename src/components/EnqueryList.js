@@ -298,7 +298,7 @@ function EnqueryList(props) {
         setOpenSnack({
           open: true,
           severity: "error",
-          msg: "When enquery is closed, just winner can anounced received the cargo",
+          msg: "When enquery is closed, just buyer can anounced received the cargo",
         });
       }
     } catch (err) {
